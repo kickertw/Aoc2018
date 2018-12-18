@@ -13,13 +13,39 @@ def findClosestCoordinate(currentPoint, coordinates):
 
     return distList[0][0]
 
-
-def grid_init(width, height):
-    grid = [None] * height
-    for i in range(height):
-        grid[i] = [None] * width
-
+def grid_init(cols, rows):
+    grid = [None] * rows
+    for i in range(len(grid)):
+        grid[i] = [None] * cols
     return grid
+
+def findLargestFiniteArea(minX, maxX, minY, maxY, coordinates, grid):
+    largestArea = 0
+    searchableCoords = list(range(len(coordinates)))
+    
+    #removing an infinite coordinate if they hit the top edge
+    for idx in grid[0]:
+        if idx in searchableCoords:
+            searchableCoords.remove(idx)
+    
+    #removing an infinite coordinate if they hit the bottom edge
+    for idx in grid[maxY]:
+        if idx in searchableCoords:
+            searchableCoords.remove(idx)
+
+    #removing an infinite coordinate if they hit the side edges
+    for row in range(1, maxY):
+        if grid[row][0] in searchableCoords:
+            searchableCoords.remove(grid[row][0])
+        if grid[row][maxX] in searchableCoords:
+            searchableCoords.remove(grid[row][maxX])
+
+    for i in searchableCoords:
+        currentSum = sum(x.count(i) for x in grid)
+        if currentSum > largestArea:
+            largestArea = currentSum
+
+    print("Largest Area = {}".format(largestArea))
 
 minX = 10000
 maxX = 0
@@ -39,14 +65,15 @@ with open("./inputs/day6.txt", "r") as f:
         maxY = y if maxY < y else maxY
         coordinates.append((x, y))
 
-print("{},{}".format(maxX, maxY))
-grid = grid_init(maxX + 1, maxY + 1)
+grid = grid_init(maxX+1, maxY+1)
 
-for i in range(maxX):
-    for j in range(maxY):
-        currentPoint = (i, j)
-        closeCoordIdx = findClosestCoordinate(currentPoint, coordinates)
-        print("{},{}".format(i,j))
-        grid[i][j] = closeCoordIdx
+for y in range(len(grid)):
+    for x in range(len(grid[0])):
+        currentPoint = (x, y)
+        if currentPoint in coordinates:
+            grid[y][x] = coordinates.index(currentPoint)
+        else:
+            closeCoordIdx = findClosestCoordinate(currentPoint, coordinates)
+            grid[y][x] = closeCoordIdx
 
-print(grid)
+findLargestFiniteArea(minX, maxX, minY, maxY, coordinates, grid)
