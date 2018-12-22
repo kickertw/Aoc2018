@@ -13,6 +13,12 @@ def isRoot(steps, key):
             return False
     return True
 
+def findRoot(steps, keys):
+    for key in keys:
+        if isRoot(steps, key):
+            return key
+    return None
+
 # 1 - Add the root node to the final order
 # 2a - Remove it from the current root list
 # 2b - Remove it from the steps list
@@ -34,7 +40,7 @@ def processNodes(steps, currentRootNodes, finalOrder):
 
 steps = []
 finalOrder = []
-keys = ['A','B','C','D','E','F'] #list(string.ascii_uppercase)
+keys = list(string.ascii_uppercase)
 
 with open("./inputs/day7.txt", "r") as f:
     for line in f:
@@ -47,8 +53,9 @@ with open("./inputs/day7.txt", "r") as f:
 
 currentRootNodes = keys
 currentRootNodes.sort()
+p1Steps = steps
 while len(currentRootNodes) > 0:
-    steps = processNodes(steps, currentRootNodes, finalOrder)
+    p1Steps = processNodes(p1Steps, currentRootNodes, finalOrder)
 
 print("Part 1 Order = " + ''.join(finalOrder))
 
@@ -66,10 +73,14 @@ def findAvailableWorker(workers):
             return worker
     return None
 
-def freeUpWorkers(workers, currentTime):
+def freeUpWorkers(workers, steps, finalOrder, currentTime):
     for worker in workers:
         if worker.active and currentTime == worker.isAvailableAt:
+            steps = removeSteps(steps, worker.workingOn)
             worker.active = False
+            worker.workingOn = None
+
+    return steps
 
 def hasActiveWorkers(workers):
     for worker in workers:
@@ -77,34 +88,36 @@ def hasActiveWorkers(workers):
             return True
     return False
 
+## Calculating the duration of each step per letter
 alphabet = list(string.ascii_uppercase)
 alphaWait = {}
 for i, letter in enumerate(alphabet):
-    alphaWait[letter] = 1 + i
+    alphaWait[letter] = 61 + i
 
 currentTime = 0
 worker1 = Worker(1)
 worker2 = Worker(2)
-workers = [worker1, worker2]#, Worker(3), Worker(4), Worker(5)]
+workers = [worker1, worker2, Worker(3), Worker(4), Worker(5)]
 while len(finalOrder) > 0 or hasActiveWorkers(workers):
-    print(currentTime)
     # Free up any workers that have just completed thier step
-    freeUpWorkers(workers, currentTime)
+    if currentTime > 0:
+        steps = freeUpWorkers(workers, steps, finalOrder, currentTime)
 
     # Find the first available worker.
     # If there is one, give them work and take that work off the list
     newWorker = findAvailableWorker(workers)
-    if not (newWorker is None) and len(finalOrder) > 0:
-        newWorker.workingOn = finalOrder[0]
+    nextRoot = findRoot(steps, finalOrder)
+    while not (newWorker is None) and len(finalOrder) > 0 and not (nextRoot is None):
+        newWorker.workingOn = nextRoot
         newWorker.active = True
-        newWorker.isAvailableAt = currentTime + alphaWait[finalOrder[0]]
-        print("Worker {} is now assigned to {} and will be free at {} sec".format(newWorker.id, finalOrder[0], newWorker.isAvailableAt))
-
-        if len(finalOrder) > 1:
-            finalOrder = finalOrder[1:]
-        else:
-            finalOrder = ""
+        newWorker.isAvailableAt = currentTime + alphaWait[nextRoot]
+        #print(" Worker {} is now assigned to {} and will be free at {} sec".format(newWorker.id, nextRoot, newWorker.isAvailableAt))
+        finalOrder.remove(nextRoot)
+        
+        # Get the next available worker and the next root (if there are any)
+        newWorker = findAvailableWorker(workers)
+        nextRoot = findRoot(steps, finalOrder)
 
     currentTime += 1
 
-print(currentTime)
+print("All steps completed in {} seconds".format(currentTime - 1))
